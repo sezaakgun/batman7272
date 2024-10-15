@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bat Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 2px solid #333;
+        }
+        #score, #highScore {
+            font-size: 24px;
+            margin-top: 10px;
+        }
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #upBtn { grid-column: 2; }
+        #leftBtn { grid-column: 1; grid-row: 2; }
+        #rightBtn { grid-column: 3; grid-row: 2; }
+        #downBtn { grid-column: 2; grid-row: 3; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="highScore">Highest Score: 0</div>
+    <div id="controls">
+        <button class="control-btn" id="upBtn">↑</button>
+        <button class="control-btn" id="leftBtn">←</button>
+        <button class="control-btn" id="rightBtn">→</button>
+        <button class="control-btn" id="downBtn">↓</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const upBtn = document.getElementById('upBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const downBtn = document.getElementById('downBtn');
+
+        const gridSize = 15;
+        const tileCount = canvas.width / gridSize;
+
+        let bat = [{ x: 10, y: 10 }];
+        let dx = 1;
+        let dy = 0;
+        let foodX;
+        let foodY;
+        let score = 0;
+        let highScore = localStorage.getItem('batGameHighScore') || 0;
+
+        function drawGame() {
+            clearCanvas();
+            moveBat();
+            drawBat();
+            drawFood();
+            checkCollision();
+            updateScore();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function moveBat() {
+            const head = { x: bat[0].x + dx, y: bat[0].y + dy };
+            bat.unshift(head);
+            if (head.x === foodX && head.y === foodY) {
+                score++;
+                placeFood();
+            } else {
+                bat.pop();
+            }
+        }
+
+        function drawBat() {
+            bat.forEach(segment => {
+                ctx.font = `${gridSize}px Arial`;
+                ctx.fillText('🦇', segment.x * gridSize, (segment.y + 1) * gridSize);
+            });
+        }
+
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.font = `${gridSize}px Arial`;
+            ctx.fillText('72', foodX * gridSize, (foodY + 1) * gridSize);
+        }
+
+        function checkCollision() {
+            const head = bat[0];
+            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+                gameOver();
+            }
+            for (let i = 1; i < bat.length; i++) {
+                if (head.x === bat[i].x && head.y === bat[i].y) {
+                    gameOver();
+                }
+            }
+        }
+
+        function gameOver() {
+            updateHighScore();
+            alert('Game Over! Your score: ' + score);
+            bat = [{ x: 10, y: 10 }];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            placeFood();
+        }
+
+        function updateScore() {
+            scoreElement.textContent = 'Score: ' + score;
+            highScoreElement.textContent = 'Highest Score: ' + highScore;
+        }
+
+        function updateHighScore() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('batGameHighScore', highScore);
+            }
+        }
+
+        function placeFood() {
+            foodX = Math.floor(Math.random() * tileCount);
+            foodY = Math.floor(Math.random() * tileCount);
+        }
+
+        function changeDirection(newDx, newDy) {
+            if (Math.abs(newDx) !== Math.abs(dx) || Math.abs(newDy) !== Math.abs(dy)) {
+                dx = newDx;
+                dy = newDy;
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': changeDirection(0, -1); break;
+                case 'ArrowDown': changeDirection(0, 1); break;
+                case 'ArrowLeft': changeDirection(-1, 0); break;
+                case 'ArrowRight': changeDirection(1, 0); break;
+            }
+        });
+
+        upBtn.addEventListener('click', () => changeDirection(0, -1));
+        downBtn.addEventListener('click', () => changeDirection(0, 1));
+        leftBtn.addEventListener('click', () => changeDirection(-1, 0));
+        rightBtn.addEventListener('click', () => changeDirection(1, 0));
+
+        placeFood();
+        updateScore();
+        setInterval(drawGame, 150);
+    </script>
+</body>
+</html>
